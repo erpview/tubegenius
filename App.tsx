@@ -22,8 +22,15 @@ const App: React.FC = () => {
     setAnalysisData(null);
 
     try {
+      // Sanitize URL - trim whitespace and fix common issues
+      let cleanUrl = url.trim();
+      // Fix double protocol (hhttps:// -> https://)
+      cleanUrl = cleanUrl.replace(/^h+ttps?:\/\//, (match) => {
+        return match.startsWith('https') ? 'https://' : 'http://';
+      });
+      
       // Validate YouTube URL
-      const videoIdMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+      const videoIdMatch = cleanUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
       
       if (!videoIdMatch) {
         setErrorMsg("Invalid YouTube URL. Please enter a valid YouTube video link.");
@@ -41,7 +48,7 @@ const App: React.FC = () => {
         length: "N/A",
         thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
         description: "Ready to download",
-        url: url
+        url: cleanUrl
       };
 
       // Skip AI analysis - set minimal data
