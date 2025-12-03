@@ -169,8 +169,23 @@ io.on('connection', (socket) => {
   });
 });
 
-// Serve static files for download
-app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
+// Serve downloads with proper headers to force download
+app.get('/downloads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'downloads', filename);
+  
+  // Set headers to force download instead of opening in browser
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'application/octet-stream');
+  
+  // Send the file
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error sending file:', err);
+      res.status(404).json({ error: 'File not found' });
+    }
+  });
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
