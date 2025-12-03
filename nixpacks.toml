@@ -1,5 +1,8 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "python311", "ffmpeg", "python311Packages.pip"]
+nixPkgs = ["nodejs_20", "python311", "ffmpeg", "yt-dlp"]
+
+[phases.install]
+cmds = ["npm install --prefix server"]
 
 [start]
-cmd = "bash start.sh"
+cmd = "node server/server.js"
