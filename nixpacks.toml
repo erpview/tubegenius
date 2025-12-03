@@ -2,7 +2,12 @@
 nixPkgs = ["nodejs_20", "python311", "ffmpeg", "yt-dlp"]
 
 [phases.install]
-cmds = ["npm install --prefix server"]
+cmds = [
+  "echo '=== Installing server dependencies ==='",
+  "npm install --prefix server",
+  "echo '=== Dependencies installed ==='",
+  "ls -la server/"
+]
 
 [start]
-cmd = "node server/server.js"
+cmd = "cd server && ls -la && echo 'Starting server...' && node server.js"
