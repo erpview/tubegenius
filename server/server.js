@@ -166,8 +166,19 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, '0.0.0.0', () => {
+
+console.log('🚀 Starting server...');
+console.log(`📍 PORT from env: ${process.env.PORT}`);
+console.log(`📍 Using PORT: ${PORT}`);
+console.log(`📁 Downloads directory: ${downloadsDir}`);
+
+server.listen(PORT, '0.0.0.0', (err) => {
+  if (err) {
+    console.error('❌ Failed to start server:', err);
+    process.exit(1);
+  }
   console.log(`✅ TubeGenius backend server running on port ${PORT}`);
   console.log(`📁 Downloads will be saved to: ${downloadsDir}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Server is listening on 0.0.0.0:${PORT}`);
 });
