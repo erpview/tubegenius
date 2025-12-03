@@ -6,7 +6,7 @@ cmds = [
   "echo '=== Installing server dependencies ==='",
   "npm install --prefix server",
   "echo '=== Installing latest yt-dlp ==='",
-  "pip install --user -U yt-dlp",
+  "pip install --break-system-packages -U yt-dlp",
   "echo '=== Dependencies installed ==='",
   "ls -la server/"
 ]
