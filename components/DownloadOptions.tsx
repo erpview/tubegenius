@@ -77,13 +77,15 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
   };
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 backdrop-blur-sm h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          <Download className="w-5 h-5 text-red-500" />
-          Download Media
+    <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl shadow-black/50 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/50">
+            <Download className="w-5 h-5 text-white" />
+          </div>
+          Download Options
         </h3>
-        <span className="text-xs bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded">
+        <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg font-medium">
             Free for personal use
         </span>
       </div>
@@ -98,22 +100,22 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
             <div 
               key={index}
               className={`
-                group flex flex-col p-3 rounded-lg border transition-all duration-300
+                group flex flex-col p-4 rounded-2xl border transition-all duration-300
                 ${isActive 
-                  ? 'bg-slate-800 border-red-500/50 shadow-lg shadow-red-900/10' 
-                  : 'bg-slate-900/50 border-slate-700 hover:border-slate-600 hover:bg-slate-800'
+                  ? 'bg-slate-800/80 border-blue-500/50 shadow-xl shadow-blue-900/20' 
+                  : 'bg-slate-800/30 border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/50'
                 }
                 ${isOtherActive ? 'opacity-50 blur-[1px]' : 'opacity-100'}
               `}
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                      isActive ? 'bg-red-500 text-white' : 
-                      option.isAudio ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-lg ${
+                      isActive ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/50' : 
+                      option.isAudio ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                   }`}>
-                    {isActive ? <Server className="w-5 h-5 animate-pulse" /> : 
-                     option.isAudio ? <Music className="w-5 h-5" /> : <FileVideo className="w-5 h-5" />}
+                    {isActive ? <Server className="w-6 h-6 animate-pulse" /> : 
+                     option.isAudio ? <Music className="w-6 h-6" /> : <FileVideo className="w-6 h-6" />}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -136,10 +138,10 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
                     onClick={() => handleDownload(index)}
                     disabled={activeDownloadIdx !== null}
                     className={`
-                      relative overflow-hidden px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 min-w-[100px] flex justify-center items-center
+                      relative overflow-hidden px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 min-w-[120px] flex justify-center items-center
                       ${isCompleted 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-slate-700 text-white hover:bg-red-600 hover:shadow-lg hover:shadow-red-900/20 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500'
+                        ? 'bg-green-500 text-white shadow-lg shadow-green-500/50' 
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100'
                       }
                     `}
                   >
@@ -166,9 +168,9 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
                          {status.progress}%
                       </span>
                    </div>
-                   <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700/50">
+                   <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700/50">
                       <div 
-                        className="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300 ease-out"
+                        className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 transition-all duration-300 ease-out shadow-lg shadow-blue-500/50"
                         style={{ width: `${status.progress}%` }}
                       ></div>
                    </div>
