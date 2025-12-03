@@ -1,0 +1,17 @@
+{
+  "name": "tubegenius-server",
+  "version": "1.0.0",
+  "description": "Backend server for TubeGenius YouTube processing",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@distube/ytdl-core": "^4.15.9",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "socket.io": "^4.6.1"
+  }
+}
