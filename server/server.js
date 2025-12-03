@@ -99,8 +99,10 @@ io.on('connection', (socket) => {
         }
       });
 
+      let errorOutput = '';
       ytdlp.stderr.on('data', (data) => {
         const error = data.toString();
+        errorOutput += error;
         console.error('yt-dlp error:', error);
         
         // Parse progress from stderr too (yt-dlp outputs progress there)
@@ -119,13 +121,25 @@ io.on('connection', (socket) => {
           
           setTimeout(() => {
             emitStatus(socket, 'COMPLETED', 100, 'Ready for download');
+            const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+              ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+              : `http://localhost:${PORT}`;
             socket.emit('download-ready', { 
-              url: `http://localhost:4000/downloads/${jobId}.${extension}`,
+              url: `${baseUrl}/downloads/${jobId}.${extension}`,
               filename: `video_${jobId}.${extension}` 
             });
           }, 500);
         } else {
-          emitStatus(socket, 'ERROR', 0, `Download failed with code ${code}`);
+          console.error('yt-dlp failed with code:', code);
+          console.error('yt-dlp error output:', errorOutput);
+          const errorMsg = errorOutput.includes('Sign in') 
+            ? 'Video requires sign-in or is age-restricted'
+            : errorOutput.includes('Video unavailable')
+            ? 'Video is unavailable or private'
+            : errorOutput.includes('403')
+            ? 'YouTube blocked the request. Try a different video.'
+            : `Download failed: ${errorOutput.substring(0, 200)}`;
+          emitStatus(socket, 'ERROR', 0, errorMsg);
         }
       });
 
