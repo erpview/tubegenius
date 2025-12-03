@@ -1,13 +1,13 @@
 {
   "name": "tubegenius-backend",
-  "version": "1.0.0",
-  "description": "TubeGenius YouTube Downloader Backend",
+  "version": "1.0.1",
+  "description": "TubeGenius YouTube Downloader Backend - Server Only",
   "main": "server/server.js",
   "scripts": {
-    "start": "cd server && node server.js",
-    "install": "cd server && npm install"
+    "start": "cd server && node server.js"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "keywords": ["youtube", "downloader", "backend"]
 }
