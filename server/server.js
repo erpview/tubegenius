@@ -54,7 +54,7 @@ io.on('connection', (socket) => {
       // STAGE 2: EXTRACTING
       emitStatus(socket, 'EXTRACTING', 20, 'Extracting video information...');
 
-      // Build yt-dlp command with options to bypass 403 errors
+      // Build yt-dlp command with options to bypass YouTube blocks
       const ytdlpArgs = [
         url,
         '-o', outputPath,
@@ -63,7 +63,10 @@ io.on('connection', (socket) => {
         '--newline',
         '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         '--referer', 'https://www.youtube.com/',
-        '--no-check-certificate'
+        '--no-check-certificate',
+        '--extractor-args', 'youtube:player_client=android,web',
+        '--extractor-args', 'youtube:skip=dash',
+        '--throttled-rate', '100K'
       ];
 
       // Add format-specific options
@@ -82,7 +85,14 @@ io.on('connection', (socket) => {
       // STAGE 3: TRANSCODING
       emitStatus(socket, 'TRANSCODING', 30, `Downloading and processing ${quality}...`);
 
-      const ytdlp = spawn('yt-dlp', ytdlpArgs);
+      // Try to use yt-dlp command, fallback to python module
+      const ytdlpCommand = process.env.RAILWAY_ENVIRONMENT ? 'python3' : 'yt-dlp';
+      const ytdlpFinalArgs = process.env.RAILWAY_ENVIRONMENT ? ['-m', 'yt_dlp', ...ytdlpArgs] : ytdlpArgs;
+      
+      console.log('Spawning yt-dlp with command:', ytdlpCommand);
+      console.log('Args:', ytdlpFinalArgs);
+      
+      const ytdlp = spawn(ytdlpCommand, ytdlpFinalArgs);
       let lastProgress = 30;
 
       ytdlp.stdout.on('data', (data) => {
@@ -99,8 +109,10 @@ io.on('connection', (socket) => {
         }
       });
 
+      let errorOutput = '';
       ytdlp.stderr.on('data', (data) => {
         const error = data.toString();
+        errorOutput += error;
         console.error('yt-dlp error:', error);
         
         // Parse progress from stderr too (yt-dlp outputs progress there)
@@ -119,13 +131,25 @@ io.on('connection', (socket) => {
           
           setTimeout(() => {
             emitStatus(socket, 'COMPLETED', 100, 'Ready for download');
+            const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+              ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+              : `http://localhost:${PORT}`;
             socket.emit('download-ready', { 
-              url: `http://localhost:4000/downloads/${jobId}.${extension}`,
+              url: `${baseUrl}/downloads/${jobId}.${extension}`,
               filename: `video_${jobId}.${extension}` 
             });
           }, 500);
         } else {
-          emitStatus(socket, 'ERROR', 0, `Download failed with code ${code}`);
+          console.error('yt-dlp failed with code:', code);
+          console.error('yt-dlp error output:', errorOutput);
+          const errorMsg = errorOutput.includes('Sign in') 
+            ? 'Video requires sign-in or is age-restricted'
+            : errorOutput.includes('Video unavailable')
+            ? 'Video is unavailable or private'
+            : errorOutput.includes('403')
+            ? 'YouTube blocked the request. Try a different video.'
+            : `Download failed: ${errorOutput.substring(0, 200)}`;
+          emitStatus(socket, 'ERROR', 0, errorMsg);
         }
       });
 
@@ -145,8 +169,23 @@ io.on('connection', (socket) => {
   });
 });
 
-// Serve static files for download
-app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
+// Serve downloads with proper headers to force download
+app.get('/downloads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'downloads', filename);
+  
+  // Set headers to force download instead of opening in browser
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'application/octet-stream');
+  
+  // Send the file
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error sending file:', err);
+      res.status(404).json({ error: 'File not found' });
+    }
+  });
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

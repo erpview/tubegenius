@@ -66,17 +66,27 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0f172a] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#0a0e27] via-[#0f1629] to-[#1a1f3a] relative overflow-hidden">
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[100px] animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[80px] animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+
+      {/* Noise texture overlay */}
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")'}}></div>
+      
       <Header />
       
-      <main className="flex-grow flex flex-col">
+      <main className="flex-grow flex flex-col relative z-10">
         <div className="relative z-10">
           <SearchBar onAnalyze={handleAnalyze} isLoading={appState === AppState.ANALYZING} />
         </div>
 
         {appState === AppState.ERROR && (
           <div className="max-w-xl mx-auto w-full px-4 mb-8">
-            <div className="bg-red-500/10 border border-red-500/20 text-red-200 p-4 rounded-xl flex items-center gap-3">
+            <div className="bg-red-500/10 backdrop-blur-xl border border-red-500/20 text-red-200 p-4 rounded-2xl flex items-center gap-3 shadow-2xl">
               <AlertCircle className="w-5 h-5 text-red-400" />
               <p>{errorMsg}</p>
             </div>
@@ -90,14 +100,6 @@ const App: React.FC = () => {
               <DownloadOptions metadata={videoData} />
             </div>
           </div>
-        )}
-        
-        {/* Empty State / Decorative Background Elements */}
-        {appState === AppState.IDLE && (
-           <div className="flex-1 flex items-center justify-center opacity-20 pointer-events-none overflow-hidden absolute inset-0 z-0">
-             <div className="w-[800px] h-[800px] bg-red-600 rounded-full blur-[150px] opacity-10 translate-y-1/2"></div>
-             <div className="w-[600px] h-[600px] bg-blue-600 rounded-full blur-[120px] opacity-10 -translate-x-1/4 -translate-y-1/4"></div>
-           </div>
         )}
 
       </main>
