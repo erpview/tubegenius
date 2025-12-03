@@ -31,7 +31,9 @@ export class BackendProcessor {
       }
 
       // Connect to real backend
-      this.socket = io('http://localhost:4000', {
+      // TODO: Replace with your Railway URL when deploying
+      const BACKEND_URL = 'http://localhost:4000'; // Change to: https://your-app.up.railway.app
+      this.socket = io(BACKEND_URL, {
         transports: ['websocket', 'polling'],
         reconnection: false
       });

@@ -153,6 +153,18 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'TubeGenius server is running' });
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'TubeGenius Backend API',
+    endpoints: {
+      health: '/health',
+      downloads: '/downloads'
+    }
+  });
+});
+
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ TubeGenius backend server running on port ${PORT}`);
