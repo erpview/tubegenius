@@ -1,13 +1,15 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "python311", "ffmpeg", "yt-dlp"]
+nixPkgs = ["nodejs_20", "python311", "ffmpeg", "python311Packages.pip"]
 
 [phases.install]
 cmds = [
   "echo '=== Installing server dependencies ==='",
   "npm install --prefix server",
+  "echo '=== Installing latest yt-dlp ==='",
+  "pip install --user -U yt-dlp",
   "echo '=== Dependencies installed ==='",
   "ls -la server/"
 ]
 
 [start]
-cmd = "cd server && ls -la && echo 'Starting server...' && node server.js"
+cmd = "cd server && echo 'Starting server...' && node server.js"
