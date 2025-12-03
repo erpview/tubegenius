@@ -16,6 +16,10 @@ dist-ssr
 server/downloads/*
 !server/downloads/.gitkeep
 
+# Frontend files (not needed for Railway backend deployment)
+package.json.frontend
+package-lock.json.frontend
+
 # Environment variables
 .env
 .env.local
