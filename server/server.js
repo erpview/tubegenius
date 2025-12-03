@@ -85,7 +85,14 @@ io.on('connection', (socket) => {
       // STAGE 3: TRANSCODING
       emitStatus(socket, 'TRANSCODING', 30, `Downloading and processing ${quality}...`);
 
-      const ytdlp = spawn('yt-dlp', ytdlpArgs);
+      // Try to use yt-dlp command, fallback to python module
+      const ytdlpCommand = process.env.RAILWAY_ENVIRONMENT ? 'python3' : 'yt-dlp';
+      const ytdlpFinalArgs = process.env.RAILWAY_ENVIRONMENT ? ['-m', 'yt_dlp', ...ytdlpArgs] : ytdlpArgs;
+      
+      console.log('Spawning yt-dlp with command:', ytdlpCommand);
+      console.log('Args:', ytdlpFinalArgs);
+      
+      const ytdlp = spawn(ytdlpCommand, ytdlpFinalArgs);
       let lastProgress = 30;
 
       ytdlp.stdout.on('data', (data) => {

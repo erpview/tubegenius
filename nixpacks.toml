@@ -7,9 +7,11 @@ cmds = [
   "npm install --prefix server",
   "echo '=== Installing latest yt-dlp ==='",
   "pip install --break-system-packages -U yt-dlp",
-  "echo '=== Dependencies installed ==='",
+  "echo '=== Verifying yt-dlp installation ==='",
+  "which yt-dlp || echo 'yt-dlp not in PATH'",
+  "python3 -m yt_dlp --version || echo 'yt-dlp module check failed'",
   "ls -la server/"
 ]
 
 [start]
-cmd = "cd server && echo 'Starting server...' && node server.js"
+cmd = "export PATH=$HOME/.local/bin:$PATH && cd server && echo 'Starting server...' && node server.js"
