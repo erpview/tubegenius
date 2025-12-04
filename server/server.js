@@ -121,19 +121,30 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
             return null;
           }).filter(entry => entry !== null);
           
-          // Deduplicate: only keep entries where text is meaningfully different
+          // Deduplicate: keep only the longest version of similar text
           const deduplicated = [];
           let lastText = '';
           for (const entry of entries) {
-            // Skip only if: text is identical OR current text is shorter and contained in previous
-            // Keep if: current text is longer (even if it contains previous text)
-            const isDuplicate = entry.text === lastText || 
-                               (lastText.includes(entry.text) && entry.text.length <= lastText.length);
+            if (entry.text.length === 0) continue;
             
-            if (!isDuplicate && entry.text.length > 0) {
+            // Check if current text starts with or contains the previous text
+            const currentStartsWithLast = entry.text.startsWith(lastText);
+            const lastStartsWithCurrent = lastText.startsWith(entry.text);
+            
+            if (currentStartsWithLast && entry.text.length > lastText.length) {
+              // Current is longer and builds on previous - replace the last entry
+              if (deduplicated.length > 0) {
+                deduplicated[deduplicated.length - 1] = `[${entry.timestamp}] ${entry.text}`;
+              } else {
+                deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              }
+              lastText = entry.text;
+            } else if (!lastStartsWithCurrent && entry.text !== lastText) {
+              // Completely different text - add it
               deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
               lastText = entry.text;
             }
+            // Otherwise skip (it's a shorter duplicate)
           }
           transcriptText = deduplicated.join('\n');
         }
@@ -157,19 +168,30 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
             })
             .filter(entry => entry !== null);
           
-          // Deduplicate: only keep entries where text is meaningfully different
+          // Deduplicate: keep only the longest version of similar text
           const deduplicated = [];
           let lastText = '';
           for (const entry of entries) {
-            // Skip only if: text is identical OR current text is shorter and contained in previous
-            // Keep if: current text is longer (even if it contains previous text)
-            const isDuplicate = entry.text === lastText || 
-                               (lastText.includes(entry.text) && entry.text.length <= lastText.length);
+            if (entry.text.length === 0) continue;
             
-            if (!isDuplicate && entry.text.length > 0) {
+            // Check if current text starts with or contains the previous text
+            const currentStartsWithLast = entry.text.startsWith(lastText);
+            const lastStartsWithCurrent = lastText.startsWith(entry.text);
+            
+            if (currentStartsWithLast && entry.text.length > lastText.length) {
+              // Current is longer and builds on previous - replace the last entry
+              if (deduplicated.length > 0) {
+                deduplicated[deduplicated.length - 1] = `[${entry.timestamp}] ${entry.text}`;
+              } else {
+                deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              }
+              lastText = entry.text;
+            } else if (!lastStartsWithCurrent && entry.text !== lastText) {
+              // Completely different text - add it
               deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
               lastText = entry.text;
             }
+            // Otherwise skip (it's a shorter duplicate)
           }
           transcriptText = deduplicated.join('\n');
         }
