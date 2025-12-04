@@ -302,12 +302,12 @@ io.on('connection', (socket) => {
         } else {
           console.error('yt-dlp failed with code:', code);
           console.error('yt-dlp error output:', errorOutput);
-          const errorMsg = errorOutput.includes('Sign in') 
-            ? 'Video requires sign-in or is age-restricted'
+          const errorMsg = errorOutput.includes('Sign in') || errorOutput.includes('age')
+            ? 'YouTube blocked this video. This may be due to: age restrictions, sign-in requirements, or cloud server IP blocking. Try a different public video or use a local setup.'
             : errorOutput.includes('Video unavailable')
             ? 'Video is unavailable or private'
-            : errorOutput.includes('403')
-            ? 'YouTube blocked the request. Try a different video.'
+            : errorOutput.includes('403') || errorOutput.includes('HTTP Error 403')
+            ? 'YouTube blocked the download request from this server. Try a different video or use a local setup.'
             : `Download failed: ${errorOutput.substring(0, 200)}`;
           emitStatus(socket, 'ERROR', 0, errorMsg);
         }
