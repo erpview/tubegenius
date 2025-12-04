@@ -3,7 +3,6 @@ import { DownloadOption, VideoMetadata, BackendProcessStatus } from '../types';
 import { MOCK_DOWNLOAD_OPTIONS } from '../constants';
 import { BackendProcessor } from '../services/mockBackendService';
 import { Download, Check, FileVideo, Music, Loader, Server, XCircle } from 'lucide-react';
-import { TranscriptViewer } from './TranscriptViewer';
 
 interface DownloadOptionsProps {
   metadata: VideoMetadata;
@@ -13,8 +12,6 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
   const [activeDownloadIdx, setActiveDownloadIdx] = useState<number | null>(null);
   const [completedIdx, setCompletedIdx] = useState<number | null>(null);
   const [status, setStatus] = useState<BackendProcessStatus | null>(null);
-  const [transcript, setTranscript] = useState<string | null>(null);
-  const [transcriptUrl, setTranscriptUrl] = useState<string | null>(null);
   
   // Use a ref to keep track of the current processor instance so we can cancel it if needed
   const processorRef = useRef<BackendProcessor | null>(null);
@@ -33,11 +30,7 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
     try {
       const url = await processor.startProcessing(metadata, option, (newStatus) => {
         setStatus(newStatus);
-        // Update transcript if available
-        if (newStatus.transcript) {
-          setTranscript(newStatus.transcript);
-          setTranscriptUrl(newStatus.transcriptUrl || null);
-        }
+        // Transcript is now handled in App.tsx, not here
       });
 
       // Trigger Browser Download
@@ -199,25 +192,6 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
         })}
       </div>
 
-      {/* Transcript Viewer */}
-      {transcript && transcriptUrl && (
-        <div className="mt-6">
-          <TranscriptViewer
-            transcript={transcript}
-            transcriptUrl={transcriptUrl}
-            videoTitle={metadata.title}
-          />
-        </div>
-      )}
-      
-      {/* No Captions Message */}
-      {status?.stage === 'COMPLETED' && transcript === null && (
-        <div className="mt-6 bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 text-center">
-          <p className="text-slate-400 text-sm">
-            📝 No captions available for this video
-          </p>
-        </div>
-      )}
     </div>
   );
 };
