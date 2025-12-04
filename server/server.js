@@ -45,9 +45,9 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
     '--write-auto-sub',      // Auto-generated captions
     '--write-sub',           // Manual captions (preferred)
     '--sub-lang', 'en',      // English
-    '--sub-format', 'txt',   // Request txt format
+    '--sub-format', 'vtt',   // Download as VTT (most compatible)
     '--skip-download',       // Don't download video again
-    '--convert-subs', 'txt', // Convert to plain text
+    '--convert-subs', 'srt', // Convert to SRT (easier to parse than VTT)
     '--no-warnings',         // Reduce noise
     '-o', path.join(downloadsDir, `${jobId}`)
   ];
@@ -86,12 +86,12 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
     
     // Check for various possible transcript filenames
     const possibleFiles = [
-      `${jobId}.en.txt`,
-      `${jobId}.en-US.txt`,
-      `${jobId}.en-GB.txt`,
+      `${jobId}.en.srt`,
+      `${jobId}.en-US.srt`,
+      `${jobId}.en-GB.srt`,
+      `${jobId}.srt`,
       `${jobId}.en.vtt`,
       `${jobId}.en-US.vtt`,
-      `${jobId}.txt`,
       `${jobId}.vtt`
     ];
     
@@ -107,7 +107,35 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
     
     if (foundFile) {
       try {
-        const transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
+        let transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
+        
+        // Convert SRT to plain text (remove timestamps and numbers)
+        if (foundFile.name.endsWith('.srt')) {
+          transcriptText = transcriptText
+            .split('\n\n')
+            .map(block => {
+              const lines = block.split('\n');
+              // Skip the number and timestamp lines, keep only text
+              return lines.slice(2).join(' ');
+            })
+            .filter(text => text.trim().length > 0)
+            .join('\n');
+        }
+        
+        // Convert VTT to plain text (remove WEBVTT header and timestamps)
+        if (foundFile.name.endsWith('.vtt')) {
+          transcriptText = transcriptText
+            .replace(/WEBVTT\n\n/, '')
+            .split('\n\n')
+            .map(block => {
+              const lines = block.split('\n');
+              // Skip timestamp lines, keep only text
+              return lines.filter(line => !line.includes('-->') && line.trim().length > 0).join(' ');
+            })
+            .filter(text => text.trim().length > 0)
+            .join('\n');
+        }
+        
         console.log('Transcript extracted successfully:', foundFile.name);
         
         socket.emit('transcript-ready', {
