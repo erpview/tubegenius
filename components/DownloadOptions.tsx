@@ -209,6 +209,15 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
           />
         </div>
       )}
+      
+      {/* No Captions Message */}
+      {status?.stage === 'COMPLETED' && transcript === null && (
+        <div className="mt-6 bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 text-center">
+          <p className="text-slate-400 text-sm">
+            📝 No captions available for this video
+          </p>
+        </div>
+      )}
     </div>
   );
 };

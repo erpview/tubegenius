@@ -35,9 +35,9 @@ const emitStatus = (socket, stage, progress, message) => {
 
 // Function to extract transcript/captions from YouTube video
 const extractTranscript = (url, jobId, socket, baseUrl) => {
-  const transcriptPath = path.resolve(__dirname, 'downloads', `${jobId}.en.txt`);
-  
   console.log('Extracting transcript for:', url);
+  
+  const downloadsDir = path.resolve(__dirname, 'downloads');
   
   // yt-dlp args to extract subtitles
   const transcriptArgs = [
@@ -47,7 +47,7 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
     '--sub-lang', 'en',      // English
     '--skip-download',       // Don't download video again
     '--convert-subs', 'txt', // Convert to plain text
-    '-o', path.resolve(__dirname, 'downloads', `${jobId}`)
+    '-o', path.join(downloadsDir, `${jobId}`)
   ];
   
   const ytdlpCommand = process.env.RAILWAY_ENVIRONMENT ? 'python3' : 'yt-dlp';
@@ -55,34 +55,56 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
     ? ['-m', 'yt_dlp', ...transcriptArgs] 
     : transcriptArgs;
   
+  console.log('Running transcript extraction with:', ytdlpCommand, ytdlpFinalArgs.join(' '));
+  
   const transcriptProcess = spawn(ytdlpCommand, ytdlpFinalArgs);
   
+  let errorOutput = '';
+  transcriptProcess.stderr.on('data', (data) => {
+    errorOutput += data.toString();
+  });
+  
   transcriptProcess.on('close', (code) => {
-    if (code === 0) {
-      // Check if transcript file exists
-      if (fs.existsSync(transcriptPath)) {
-        try {
-          const transcriptText = fs.readFileSync(transcriptPath, 'utf-8');
-          console.log('Transcript extracted successfully');
-          
-          socket.emit('transcript-ready', {
-            transcriptUrl: `${baseUrl}/downloads/${jobId}.en.txt`,
-            transcriptText: transcriptText,
-            filename: `transcript_${jobId}.txt`
-          });
-        } catch (err) {
-          console.error('Error reading transcript:', err);
-        }
-      } else {
-        console.log('No captions available for this video');
+    console.log('Transcript extraction finished with code:', code);
+    
+    // Check for various possible transcript filenames
+    const possibleFiles = [
+      `${jobId}.en.txt`,
+      `${jobId}.en-US.txt`,
+      `${jobId}.en-GB.txt`,
+      `${jobId}.txt`
+    ];
+    
+    let foundFile = null;
+    for (const filename of possibleFiles) {
+      const filePath = path.join(downloadsDir, filename);
+      if (fs.existsSync(filePath)) {
+        foundFile = { path: filePath, name: filename };
+        break;
+      }
+    }
+    
+    if (foundFile) {
+      try {
+        const transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
+        console.log('Transcript extracted successfully:', foundFile.name);
+        
+        socket.emit('transcript-ready', {
+          transcriptUrl: `${baseUrl}/downloads/${foundFile.name}`,
+          transcriptText: transcriptText,
+          filename: `transcript_${jobId}.txt`
+        });
+      } catch (err) {
+        console.error('Error reading transcript:', err);
         socket.emit('transcript-ready', {
           transcriptUrl: null,
           transcriptText: null,
-          message: 'No captions available for this video'
+          message: 'Error reading transcript file'
         });
       }
     } else {
-      console.log('Transcript extraction failed or no captions available');
+      console.log('No captions available. Checked files:', possibleFiles);
+      console.log('Error output:', errorOutput);
       socket.emit('transcript-ready', {
         transcriptUrl: null,
         transcriptText: null,
@@ -93,6 +115,11 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
   
   transcriptProcess.on('error', (err) => {
     console.error('Transcript extraction error:', err);
+    socket.emit('transcript-ready', {
+      transcriptUrl: null,
+      transcriptText: null,
+      message: 'Transcript extraction failed'
+    });
   });
 };
 
