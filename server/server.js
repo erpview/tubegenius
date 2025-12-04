@@ -121,11 +121,16 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
             return null;
           }).filter(entry => entry !== null);
           
-          // Deduplicate: only keep entries where text is different from previous
+          // Deduplicate: only keep entries where text is meaningfully different
           const deduplicated = [];
           let lastText = '';
           for (const entry of entries) {
-            if (entry.text !== lastText && entry.text.length > 0) {
+            // Skip if text is identical or if there's significant overlap
+            const isDuplicate = entry.text === lastText || 
+                               lastText.includes(entry.text) ||
+                               entry.text.includes(lastText);
+            
+            if (!isDuplicate && entry.text.length > 0) {
               deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
               lastText = entry.text;
             }
@@ -152,11 +157,16 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
             })
             .filter(entry => entry !== null);
           
-          // Deduplicate: only keep entries where text is different from previous
+          // Deduplicate: only keep entries where text is meaningfully different
           const deduplicated = [];
           let lastText = '';
           for (const entry of entries) {
-            if (entry.text !== lastText && entry.text.length > 0) {
+            // Skip if text is identical or if there's significant overlap
+            const isDuplicate = entry.text === lastText || 
+                               lastText.includes(entry.text) ||
+                               entry.text.includes(lastText);
+            
+            if (!isDuplicate && entry.text.length > 0) {
               deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
               lastText = entry.text;
             }
