@@ -109,6 +109,9 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
       try {
         let transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
         
+        // Log first 2000 chars of raw SRT for debugging
+        console.log('Raw SRT preview (first 2000 chars):', transcriptText.substring(0, 2000));
+        
         // Convert SRT to readable text with timestamps (deduplicated)
         if (foundFile.name.endsWith('.srt')) {
           const entries = transcriptText.split('\n\n').map(block => {
