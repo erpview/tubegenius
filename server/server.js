@@ -109,26 +109,33 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
       try {
         let transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
         
-        // Convert SRT to readable text with timestamps
+        // Convert SRT to readable text with timestamps (deduplicated)
         if (foundFile.name.endsWith('.srt')) {
-          transcriptText = transcriptText
-            .split('\n\n')
-            .map(block => {
-              const lines = block.split('\n');
-              if (lines.length >= 3) {
-                const timestamp = lines[1].split(' --> ')[0]; // Get start time
-                const text = lines.slice(2).join(' ');
-                return `[${timestamp}] ${text}`;
-              }
-              return '';
-            })
-            .filter(text => text.trim().length > 0)
-            .join('\n');
+          const entries = transcriptText.split('\n\n').map(block => {
+            const lines = block.split('\n');
+            if (lines.length >= 3) {
+              const timestamp = lines[1].split(' --> ')[0];
+              const text = lines.slice(2).join(' ').trim();
+              return { timestamp, text };
+            }
+            return null;
+          }).filter(entry => entry !== null);
+          
+          // Deduplicate: only keep entries where text is different from previous
+          const deduplicated = [];
+          let lastText = '';
+          for (const entry of entries) {
+            if (entry.text !== lastText && entry.text.length > 0) {
+              deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              lastText = entry.text;
+            }
+          }
+          transcriptText = deduplicated.join('\n');
         }
         
-        // Convert VTT to readable text with timestamps
+        // Convert VTT to readable text with timestamps (deduplicated)
         if (foundFile.name.endsWith('.vtt')) {
-          transcriptText = transcriptText
+          const entries = transcriptText
             .replace(/WEBVTT\n\n/, '')
             .split('\n\n')
             .map(block => {
@@ -138,13 +145,23 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
               
               if (timestampLine && textLines.length > 0) {
                 const timestamp = timestampLine.split(' --> ')[0].trim();
-                const text = textLines.join(' ');
-                return `[${timestamp}] ${text}`;
+                const text = textLines.join(' ').trim();
+                return { timestamp, text };
               }
-              return '';
+              return null;
             })
-            .filter(text => text.trim().length > 0)
-            .join('\n');
+            .filter(entry => entry !== null);
+          
+          // Deduplicate: only keep entries where text is different from previous
+          const deduplicated = [];
+          let lastText = '';
+          for (const entry of entries) {
+            if (entry.text !== lastText && entry.text.length > 0) {
+              deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              lastText = entry.text;
+            }
+          }
+          transcriptText = deduplicated.join('\n');
         }
         
         console.log('Transcript extracted successfully:', foundFile.name);
