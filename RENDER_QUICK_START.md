@@ -27,6 +27,7 @@
 **Environment Variables** (click "Add Environment Variable"):
 - `NODE_ENV` = `production`
 - `PORT` = `10000`
+- `PYTHON_VERSION` = `3.11.0`
 
 **Advanced Settings:**
 - Health Check Path: `/health`
