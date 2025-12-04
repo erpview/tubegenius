@@ -31,7 +31,9 @@ export class BackendProcessor {
       }
 
       // Connect to real backend
-      const BACKEND_URL = 'https://tubegenius-backend.onrender.com';
+      // TODO: Replace with your ngrok URL when running locally
+      // Example: 'https://abc123-xyz.ngrok-free.app'
+      const BACKEND_URL = 'https://tubegenius-backend.onrender.com'; // Change this to your ngrok URL
       this.socket = io(BACKEND_URL, {
         transports: ['websocket', 'polling'],
         reconnection: false
