@@ -45,8 +45,10 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
     '--write-auto-sub',      // Auto-generated captions
     '--write-sub',           // Manual captions (preferred)
     '--sub-lang', 'en',      // English
+    '--sub-format', 'vtt',   // Download as VTT (most compatible)
     '--skip-download',       // Don't download video again
-    '--convert-subs', 'txt', // Convert to plain text
+    '--convert-subs', 'srt', // Convert to SRT (easier to parse than VTT)
+    '--no-warnings',         // Reduce noise
     '-o', path.join(downloadsDir, `${jobId}`)
   ];
   
@@ -60,6 +62,12 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
   const transcriptProcess = spawn(ytdlpCommand, ytdlpFinalArgs);
   
   let errorOutput = '';
+  let stdOutput = '';
+  
+  transcriptProcess.stdout.on('data', (data) => {
+    stdOutput += data.toString();
+  });
+  
   transcriptProcess.stderr.on('data', (data) => {
     errorOutput += data.toString();
   });
@@ -67,12 +75,24 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
   transcriptProcess.on('close', (code) => {
     console.log('Transcript extraction finished with code:', code);
     
+    // List all files in downloads directory for debugging
+    try {
+      const allFiles = fs.readdirSync(downloadsDir);
+      const jobFiles = allFiles.filter(f => f.includes(jobId.toString()));
+      console.log('Files found for job', jobId, ':', jobFiles);
+    } catch (err) {
+      console.error('Error listing files:', err);
+    }
+    
     // Check for various possible transcript filenames
     const possibleFiles = [
-      `${jobId}.en.txt`,
-      `${jobId}.en-US.txt`,
-      `${jobId}.en-GB.txt`,
-      `${jobId}.txt`
+      `${jobId}.en.srt`,
+      `${jobId}.en-US.srt`,
+      `${jobId}.en-GB.srt`,
+      `${jobId}.srt`,
+      `${jobId}.en.vtt`,
+      `${jobId}.en-US.vtt`,
+      `${jobId}.vtt`
     ];
     
     let foundFile = null;
@@ -80,13 +100,53 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
       const filePath = path.join(downloadsDir, filename);
       if (fs.existsSync(filePath)) {
         foundFile = { path: filePath, name: filename };
+        console.log('Found transcript file:', filename);
         break;
       }
     }
     
     if (foundFile) {
       try {
-        const transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
+        let transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
+        
+        // Convert SRT to readable text with timestamps
+        if (foundFile.name.endsWith('.srt')) {
+          transcriptText = transcriptText
+            .split('\n\n')
+            .map(block => {
+              const lines = block.split('\n');
+              if (lines.length >= 3) {
+                const timestamp = lines[1].split(' --> ')[0]; // Get start time
+                const text = lines.slice(2).join(' ');
+                return `[${timestamp}] ${text}`;
+              }
+              return '';
+            })
+            .filter(text => text.trim().length > 0)
+            .join('\n');
+        }
+        
+        // Convert VTT to readable text with timestamps
+        if (foundFile.name.endsWith('.vtt')) {
+          transcriptText = transcriptText
+            .replace(/WEBVTT\n\n/, '')
+            .split('\n\n')
+            .map(block => {
+              const lines = block.split('\n');
+              const timestampLine = lines.find(line => line.includes('-->'));
+              const textLines = lines.filter(line => !line.includes('-->') && line.trim().length > 0);
+              
+              if (timestampLine && textLines.length > 0) {
+                const timestamp = timestampLine.split(' --> ')[0].trim();
+                const text = textLines.join(' ');
+                return `[${timestamp}] ${text}`;
+              }
+              return '';
+            })
+            .filter(text => text.trim().length > 0)
+            .join('\n');
+        }
+        
         console.log('Transcript extracted successfully:', foundFile.name);
         
         socket.emit('transcript-ready', {
@@ -104,7 +164,8 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
       }
     } else {
       console.log('No captions available. Checked files:', possibleFiles);
-      console.log('Error output:', errorOutput);
+      console.log('Stdout:', stdOutput);
+      console.log('Stderr:', errorOutput);
       socket.emit('transcript-ready', {
         transcriptUrl: null,
         transcriptText: null,
@@ -260,6 +321,34 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('Download error:', error);
       emitStatus(socket, 'ERROR', 0, error.message);
+    }
+  });
+
+  // New event: Get transcript only (before download)
+  socket.on('get-transcript', async ({ url }) => {
+    console.log('Transcript request for:', url);
+    
+    try {
+      // Validate YouTube URL
+      if (!url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)) {
+        throw new Error('Invalid YouTube URL');
+      }
+
+      const jobId = Date.now();
+      const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+        : `http://localhost:${PORT}`;
+      
+      // Extract transcript immediately
+      extractTranscript(url, jobId, socket, baseUrl);
+      
+    } catch (error) {
+      console.error('Transcript extraction error:', error);
+      socket.emit('transcript-ready', {
+        transcriptUrl: null,
+        transcriptText: null,
+        message: error.message || 'Failed to extract transcript'
+      });
     }
   });
 

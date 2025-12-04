@@ -1,19 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SearchBar } from './components/SearchBar';
 import { VideoInfo } from './components/VideoInfo';
 import { DownloadOptions } from './components/DownloadOptions';
 import { AIAnalysis } from './components/AIAnalysis';
 import { Footer } from './components/Footer';
+import { TranscriptViewer } from './components/TranscriptViewer';
 import { analyzeVideoUrl } from './services/geminiService';
-import { AppState, VideoMetadata, AIAnalysisData } from './types';
+import { VideoMetadata, AIAnalysisData, AppState } from './types';
 import { AlertCircle } from 'lucide-react';
+import io, { Socket } from 'socket.io-client';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [videoData, setVideoData] = useState<VideoMetadata | null>(null);
   const [analysisData, setAnalysisData] = useState<AIAnalysisData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const [transcriptUrl, setTranscriptUrl] = useState<string | null>(null);
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+
+  const fetchTranscript = (url: string) => {
+    const BACKEND_URL = 'https://tubegenius-production.up.railway.app';
+    const socket = io(BACKEND_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: false
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected to backend for transcript');
+      socket.emit('get-transcript', { url });
+    });
+
+    socket.on('transcript-ready', ({ transcriptText, transcriptUrl: url, message }: any) => {
+      if (transcriptText) {
+        setTranscript(transcriptText);
+        setTranscriptUrl(url);
+        setShowDownloadOptions(true); // Show download options after transcript is ready
+      } else {
+        console.log('No transcript available:', message);
+        setShowDownloadOptions(true); // Still show download options even if no transcript
+      }
+      socket.disconnect();
+    });
+
+    socket.on('connect_error', (error: any) => {
+      console.error('Socket connection error:', error);
+      setShowDownloadOptions(true); // Show download options anyway
+      socket.disconnect();
+    });
+  };
 
   const handleAnalyze = async (url: string) => {
     setAppState(AppState.ANALYZING);
@@ -63,6 +99,13 @@ const App: React.FC = () => {
 
       setVideoData(metadata);
       setAnalysisData(analysis);
+      setShowDownloadOptions(false); // Hide download options initially
+      setTranscript(null);
+      setTranscriptUrl(null);
+      
+      // Fetch transcript first
+      fetchTranscript(cleanUrl);
+      
       setAppState(AppState.READY);
 
     } catch (error) {
@@ -104,7 +147,27 @@ const App: React.FC = () => {
           <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="space-y-6">
               <VideoInfo metadata={videoData} />
-              <DownloadOptions metadata={videoData} />
+              
+              {/* Show transcript first */}
+              {transcript && transcriptUrl && (
+                <TranscriptViewer
+                  transcript={transcript}
+                  transcriptUrl={transcriptUrl}
+                  videoTitle={videoData.title}
+                />
+              )}
+              
+              {/* Show loading message while fetching transcript */}
+              {!showDownloadOptions && !transcript && (
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 text-center">
+                  <p className="text-slate-400">📝 Extracting transcript...</p>
+                </div>
+              )}
+              
+              {/* Show download options after transcript is ready */}
+              {showDownloadOptions && (
+                <DownloadOptions metadata={videoData} />
+              )}
             </div>
           </div>
         )}
