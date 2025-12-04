@@ -124,45 +124,32 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
             return null;
           }).filter(entry => entry !== null);
           
-          // Group by time intervals (every 10 seconds) and merge text
-          const timeGroups = new Map();
-          
+          // Deduplicate: keep only the longest version of similar text
+          const deduplicated = [];
+          let lastText = '';
           for (const entry of entries) {
             if (entry.text.length === 0) continue;
             
-            // Parse timestamp to get seconds
-            const timeParts = entry.timestamp.split(':');
-            let totalSeconds = 0;
-            if (timeParts.length === 3) {
-              // HH:MM:SS,mmm format
-              const [hours, mins, secs] = timeParts;
-              totalSeconds = parseInt(hours) * 3600 + parseInt(mins) * 60 + parseFloat(secs.replace(',', '.'));
+            // Check if current text starts with or contains the previous text
+            const currentStartsWithLast = entry.text.startsWith(lastText);
+            const lastStartsWithCurrent = lastText.startsWith(entry.text);
+            
+            if (currentStartsWithLast && entry.text.length > lastText.length) {
+              // Current is longer and builds on previous - replace the last entry
+              if (deduplicated.length > 0) {
+                deduplicated[deduplicated.length - 1] = `[${entry.timestamp}] ${entry.text}`;
+              } else {
+                deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              }
+              lastText = entry.text;
+            } else if (!lastStartsWithCurrent && entry.text !== lastText) {
+              // Completely different text - add it
+              deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              lastText = entry.text;
             }
-            
-            // Group into 10-second intervals
-            const interval = Math.floor(totalSeconds / 10) * 10;
-            
-            if (!timeGroups.has(interval)) {
-              timeGroups.set(interval, {
-                timestamp: entry.timestamp,
-                texts: new Set()
-              });
-            }
-            
-            // Add unique words to avoid repetition
-            const words = entry.text.split(' ');
-            timeGroups.get(interval).texts.add(entry.text);
+            // Otherwise skip (it's a shorter duplicate)
           }
-          
-          // Build final transcript from groups
-          const grouped = [];
-          for (const [interval, data] of Array.from(timeGroups.entries()).sort((a, b) => a[0] - b[0])) {
-            // Take the longest text from each group (most complete)
-            const longestText = Array.from(data.texts).sort((a, b) => b.length - a.length)[0];
-            grouped.push(`[${data.timestamp}] ${longestText}`);
-          }
-          
-          transcriptText = grouped.join('\n\n');
+          transcriptText = deduplicated.join('\n');
         }
         
         // Convert VTT to readable text with timestamps (deduplicated)
@@ -184,43 +171,32 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
             })
             .filter(entry => entry !== null);
           
-          // Group by time intervals (every 10 seconds) and merge text
-          const timeGroups = new Map();
-          
+          // Deduplicate: keep only the longest version of similar text
+          const deduplicated = [];
+          let lastText = '';
           for (const entry of entries) {
             if (entry.text.length === 0) continue;
             
-            // Parse timestamp to get seconds
-            const timeParts = entry.timestamp.split(':');
-            let totalSeconds = 0;
-            if (timeParts.length === 3) {
-              // HH:MM:SS.mmm format
-              const [hours, mins, secs] = timeParts;
-              totalSeconds = parseInt(hours) * 3600 + parseInt(mins) * 60 + parseFloat(secs);
+            // Check if current text starts with or contains the previous text
+            const currentStartsWithLast = entry.text.startsWith(lastText);
+            const lastStartsWithCurrent = lastText.startsWith(entry.text);
+            
+            if (currentStartsWithLast && entry.text.length > lastText.length) {
+              // Current is longer and builds on previous - replace the last entry
+              if (deduplicated.length > 0) {
+                deduplicated[deduplicated.length - 1] = `[${entry.timestamp}] ${entry.text}`;
+              } else {
+                deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              }
+              lastText = entry.text;
+            } else if (!lastStartsWithCurrent && entry.text !== lastText) {
+              // Completely different text - add it
+              deduplicated.push(`[${entry.timestamp}] ${entry.text}`);
+              lastText = entry.text;
             }
-            
-            // Group into 10-second intervals
-            const interval = Math.floor(totalSeconds / 10) * 10;
-            
-            if (!timeGroups.has(interval)) {
-              timeGroups.set(interval, {
-                timestamp: entry.timestamp,
-                texts: new Set()
-              });
-            }
-            
-            timeGroups.get(interval).texts.add(entry.text);
+            // Otherwise skip (it's a shorter duplicate)
           }
-          
-          // Build final transcript from groups
-          const grouped = [];
-          for (const [interval, data] of Array.from(timeGroups.entries()).sort((a, b) => a[0] - b[0])) {
-            // Take the longest text from each group (most complete)
-            const longestText = Array.from(data.texts).sort((a, b) => b.length - a.length)[0];
-            grouped.push(`[${data.timestamp}] ${longestText}`);
-          }
-          
-          transcriptText = grouped.join('\n\n');
+          transcriptText = deduplicated.join('\n');
         }
         
         console.log('Transcript extracted successfully:', foundFile.name);
