@@ -45,8 +45,10 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
     '--write-auto-sub',      // Auto-generated captions
     '--write-sub',           // Manual captions (preferred)
     '--sub-lang', 'en',      // English
+    '--sub-format', 'txt',   // Request txt format
     '--skip-download',       // Don't download video again
     '--convert-subs', 'txt', // Convert to plain text
+    '--no-warnings',         // Reduce noise
     '-o', path.join(downloadsDir, `${jobId}`)
   ];
   
@@ -60,6 +62,12 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
   const transcriptProcess = spawn(ytdlpCommand, ytdlpFinalArgs);
   
   let errorOutput = '';
+  let stdOutput = '';
+  
+  transcriptProcess.stdout.on('data', (data) => {
+    stdOutput += data.toString();
+  });
+  
   transcriptProcess.stderr.on('data', (data) => {
     errorOutput += data.toString();
   });
@@ -67,12 +75,24 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
   transcriptProcess.on('close', (code) => {
     console.log('Transcript extraction finished with code:', code);
     
+    // List all files in downloads directory for debugging
+    try {
+      const allFiles = fs.readdirSync(downloadsDir);
+      const jobFiles = allFiles.filter(f => f.includes(jobId.toString()));
+      console.log('Files found for job', jobId, ':', jobFiles);
+    } catch (err) {
+      console.error('Error listing files:', err);
+    }
+    
     // Check for various possible transcript filenames
     const possibleFiles = [
       `${jobId}.en.txt`,
       `${jobId}.en-US.txt`,
       `${jobId}.en-GB.txt`,
-      `${jobId}.txt`
+      `${jobId}.en.vtt`,
+      `${jobId}.en-US.vtt`,
+      `${jobId}.txt`,
+      `${jobId}.vtt`
     ];
     
     let foundFile = null;
@@ -80,6 +100,7 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
       const filePath = path.join(downloadsDir, filename);
       if (fs.existsSync(filePath)) {
         foundFile = { path: filePath, name: filename };
+        console.log('Found transcript file:', filename);
         break;
       }
     }
@@ -104,7 +125,8 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
       }
     } else {
       console.log('No captions available. Checked files:', possibleFiles);
-      console.log('Error output:', errorOutput);
+      console.log('Stdout:', stdOutput);
+      console.log('Stderr:', errorOutput);
       socket.emit('transcript-ready', {
         transcriptUrl: null,
         transcriptText: null,
