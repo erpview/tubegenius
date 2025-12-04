@@ -1,5 +1,5 @@
 import React from 'react';
-import { Github, Twitter, Heart } from 'lucide-react';
+import { Github, Twitter } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -13,9 +13,6 @@ export const Footer: React.FC = () => {
             <a href="#" className="hover:text-white transition-colors"><Github className="w-5 h-5" /></a>
             <a href="#" className="hover:text-white transition-colors"><Twitter className="w-5 h-5" /></a>
         </div>
-      </div>
-      <div className="text-center mt-6 text-xs text-slate-600 flex items-center justify-center gap-1">
-        Made with <Heart className="w-3 h-3 text-red-900 fill-red-900" /> using Gemini API & React
       </div>
     </footer>
   );

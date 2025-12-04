@@ -69,12 +69,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onAnalyze, isLoading }) =>
         </div>
       </form>
 
-      <div className="flex items-center justify-center gap-4">
-        <button className="px-6 py-2.5 bg-slate-800/50 hover:bg-slate-800/70 backdrop-blur-xl border border-slate-700/50 rounded-xl text-slate-300 font-medium transition-all hover:scale-105">
-          Book a demo
-        </button>
-      </div>
-
       <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm">
         <span className="px-4 py-2 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/30 text-slate-400">✨ MP4 1080p</span>
         <span className="px-4 py-2 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/30 text-slate-400">🎬 MP4 720p</span>
