@@ -324,6 +324,34 @@ io.on('connection', (socket) => {
     }
   });
 
+  // New event: Get transcript only (before download)
+  socket.on('get-transcript', async ({ url }) => {
+    console.log('Transcript request for:', url);
+    
+    try {
+      // Validate YouTube URL
+      if (!url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)) {
+        throw new Error('Invalid YouTube URL');
+      }
+
+      const jobId = Date.now();
+      const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+        : `http://localhost:${PORT}`;
+      
+      // Extract transcript immediately
+      extractTranscript(url, jobId, socket, baseUrl);
+      
+    } catch (error) {
+      console.error('Transcript extraction error:', error);
+      socket.emit('transcript-ready', {
+        transcriptUrl: null,
+        transcriptText: null,
+        message: error.message || 'Failed to extract transcript'
+      });
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
