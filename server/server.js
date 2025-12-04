@@ -109,28 +109,39 @@ const extractTranscript = (url, jobId, socket, baseUrl) => {
       try {
         let transcriptText = fs.readFileSync(foundFile.path, 'utf-8');
         
-        // Convert SRT to plain text (remove timestamps and numbers)
+        // Convert SRT to readable text with timestamps
         if (foundFile.name.endsWith('.srt')) {
           transcriptText = transcriptText
             .split('\n\n')
             .map(block => {
               const lines = block.split('\n');
-              // Skip the number and timestamp lines, keep only text
-              return lines.slice(2).join(' ');
+              if (lines.length >= 3) {
+                const timestamp = lines[1].split(' --> ')[0]; // Get start time
+                const text = lines.slice(2).join(' ');
+                return `[${timestamp}] ${text}`;
+              }
+              return '';
             })
             .filter(text => text.trim().length > 0)
             .join('\n');
         }
         
-        // Convert VTT to plain text (remove WEBVTT header and timestamps)
+        // Convert VTT to readable text with timestamps
         if (foundFile.name.endsWith('.vtt')) {
           transcriptText = transcriptText
             .replace(/WEBVTT\n\n/, '')
             .split('\n\n')
             .map(block => {
               const lines = block.split('\n');
-              // Skip timestamp lines, keep only text
-              return lines.filter(line => !line.includes('-->') && line.trim().length > 0).join(' ');
+              const timestampLine = lines.find(line => line.includes('-->'));
+              const textLines = lines.filter(line => !line.includes('-->') && line.trim().length > 0);
+              
+              if (timestampLine && textLines.length > 0) {
+                const timestamp = timestampLine.split(' --> ')[0].trim();
+                const text = textLines.join(' ');
+                return `[${timestamp}] ${text}`;
+              }
+              return '';
             })
             .filter(text => text.trim().length > 0)
             .join('\n');
