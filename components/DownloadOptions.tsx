@@ -53,17 +53,24 @@ export const DownloadOptions: React.FC<DownloadOptionsProps> = ({ metadata }) =>
 
     } catch (e) {
       console.error("Download failed", e);
+      const errorMessage = e instanceof Error ? e.message : 'Download failed';
+      
+      // Provide helpful message for age-restricted videos
+      const friendlyMessage = errorMessage.includes('age-restricted') || errorMessage.includes('sign-in')
+        ? 'This video is age-restricted or requires sign-in. Try a different public video.'
+        : errorMessage;
+      
       setStatus({ 
         stage: 'ERROR', 
         progress: 0, 
-        message: e instanceof Error ? e.message : 'Download failed' 
+        message: friendlyMessage
       });
-      // Show error for 5 seconds
+      // Show error for 8 seconds
       setTimeout(() => {
         setActiveDownloadIdx(null);
         setStatus(null);
         processorRef.current = null;
-      }, 5000);
+      }, 8000);
     }
   };
 
