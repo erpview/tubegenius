@@ -43,4 +43,6 @@ export interface BackendProcessStatus {
   stage: ProcessStage;
   progress: number;
   message: string;
+  transcript?: string | null;
+  transcriptUrl?: string | null;
 }
