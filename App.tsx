@@ -27,13 +27,22 @@ const App: React.FC = () => {
       reconnection: false
     });
 
+    // Set a timeout in case transcript extraction takes too long
+    const timeout = setTimeout(() => {
+      console.log('Transcript extraction timeout - showing download options anyway');
+      setShowDownloadOptions(true);
+      socket.disconnect();
+    }, 30000); // 30 second timeout
+
     socket.on('connect', () => {
       console.log('Connected to backend for transcript');
       socket.emit('get-transcript', { url });
     });
 
     socket.on('transcript-ready', ({ transcriptText, transcriptUrl: url, message }: any) => {
+      clearTimeout(timeout);
       if (transcriptText) {
+        console.log('Transcript received, length:', transcriptText.length);
         setTranscript(transcriptText);
         setTranscriptUrl(url);
         setShowDownloadOptions(true); // Show download options after transcript is ready
@@ -45,6 +54,7 @@ const App: React.FC = () => {
     });
 
     socket.on('connect_error', (error: any) => {
+      clearTimeout(timeout);
       console.error('Socket connection error:', error);
       setShowDownloadOptions(true); // Show download options anyway
       socket.disconnect();
