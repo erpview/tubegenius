@@ -33,6 +33,69 @@ const emitStatus = (socket, stage, progress, message) => {
   });
 };
 
+// Function to extract transcript/captions from YouTube video
+const extractTranscript = (url, jobId, socket, baseUrl) => {
+  const transcriptPath = path.resolve(__dirname, 'downloads', `${jobId}.en.txt`);
+  
+  console.log('Extracting transcript for:', url);
+  
+  // yt-dlp args to extract subtitles
+  const transcriptArgs = [
+    url,
+    '--write-auto-sub',      // Auto-generated captions
+    '--write-sub',           // Manual captions (preferred)
+    '--sub-lang', 'en',      // English
+    '--skip-download',       // Don't download video again
+    '--convert-subs', 'txt', // Convert to plain text
+    '-o', path.resolve(__dirname, 'downloads', `${jobId}`)
+  ];
+  
+  const ytdlpCommand = process.env.RAILWAY_ENVIRONMENT ? 'python3' : 'yt-dlp';
+  const ytdlpFinalArgs = process.env.RAILWAY_ENVIRONMENT 
+    ? ['-m', 'yt_dlp', ...transcriptArgs] 
+    : transcriptArgs;
+  
+  const transcriptProcess = spawn(ytdlpCommand, ytdlpFinalArgs);
+  
+  transcriptProcess.on('close', (code) => {
+    if (code === 0) {
+      // Check if transcript file exists
+      if (fs.existsSync(transcriptPath)) {
+        try {
+          const transcriptText = fs.readFileSync(transcriptPath, 'utf-8');
+          console.log('Transcript extracted successfully');
+          
+          socket.emit('transcript-ready', {
+            transcriptUrl: `${baseUrl}/downloads/${jobId}.en.txt`,
+            transcriptText: transcriptText,
+            filename: `transcript_${jobId}.txt`
+          });
+        } catch (err) {
+          console.error('Error reading transcript:', err);
+        }
+      } else {
+        console.log('No captions available for this video');
+        socket.emit('transcript-ready', {
+          transcriptUrl: null,
+          transcriptText: null,
+          message: 'No captions available for this video'
+        });
+      }
+    } else {
+      console.log('Transcript extraction failed or no captions available');
+      socket.emit('transcript-ready', {
+        transcriptUrl: null,
+        transcriptText: null,
+        message: 'No captions available for this video'
+      });
+    }
+  });
+  
+  transcriptProcess.on('error', (err) => {
+    console.error('Transcript extraction error:', err);
+  });
+};
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
@@ -64,8 +127,14 @@ io.on('connection', (socket) => {
         '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         '--referer', 'https://www.youtube.com/',
         '--no-check-certificate',
-        '--extractor-args', 'youtube:player_client=android,web',
-        '--extractor-args', 'youtube:skip=dash',
+        // Use multiple player clients to bypass restrictions
+        '--extractor-args', 'youtube:player_client=android,ios,web,mweb',
+        '--extractor-args', 'youtube:skip=dash,hls',
+        // Bypass age restrictions
+        '--age-limit', '0',
+        // Add cookies support (helps with sign-in required videos)
+        '--mark-watched',
+        '--no-warnings',
         '--throttled-rate', '100K'
       ];
 
@@ -128,9 +197,9 @@ io.on('connection', (socket) => {
         if (code === 0) {
           // STAGE 4: COMPRESSING / FINALIZING
           emitStatus(socket, 'COMPRESSING', 95, 'Finalizing file...');
-          
+          // Small delay to ensure file is written
           setTimeout(() => {
-            emitStatus(socket, 'COMPLETED', 100, 'Ready for download');
+            emitStatus(socket, 'COMPLETE', 100, 'Download complete!');
             const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
               ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
               : `http://localhost:${PORT}`;
@@ -138,6 +207,9 @@ io.on('connection', (socket) => {
               url: `${baseUrl}/downloads/${jobId}.${extension}`,
               filename: `video_${jobId}.${extension}` 
             });
+            
+            // Extract transcript/captions
+            extractTranscript(url, jobId, socket, baseUrl);
           }, 500);
         } else {
           console.error('yt-dlp failed with code:', code);
@@ -174,9 +246,14 @@ app.get('/downloads/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, 'downloads', filename);
   
-  // Set headers to force download instead of opening in browser
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.setHeader('Content-Type', 'application/octet-stream');
+  // Set appropriate headers based on file type
+  if (filename.endsWith('.txt')) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  } else {
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+  }
   
   // Send the file
   res.sendFile(filePath, (err) => {

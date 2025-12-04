@@ -66,6 +66,29 @@ export class BackendProcessor {
       // Listen for download ready
       this.socket.on('download-ready', ({ url }: { url: string }) => {
         resolve(url);
+        // Don't disconnect yet - wait for transcript
+      });
+
+      // Listen for transcript ready
+      this.socket.on('transcript-ready', ({ transcriptText, transcriptUrl, message }: any) => {
+        if (transcriptText) {
+          onUpdate({
+            stage: 'COMPLETED',
+            progress: 100,
+            message: 'Transcript extracted!',
+            transcript: transcriptText,
+            transcriptUrl: transcriptUrl
+          });
+        } else {
+          onUpdate({
+            stage: 'COMPLETED',
+            progress: 100,
+            message: message || 'No captions available',
+            transcript: null,
+            transcriptUrl: null
+          });
+        }
+        // Now disconnect
         this.socket?.disconnect();
       });
     });
