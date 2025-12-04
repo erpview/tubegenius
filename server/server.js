@@ -296,8 +296,7 @@ io.on('connection', (socket) => {
               filename: `video_${jobId}.${extension}` 
             });
             
-            // Extract transcript/captions
-            extractTranscript(url, jobId, socket, baseUrl);
+            // Don't extract transcript again - it was already done before download
           }, 500);
         } else {
           console.error('yt-dlp failed with code:', code);
