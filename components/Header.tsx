@@ -16,10 +16,6 @@ export const Header: React.FC = () => {
         </h1>
       </div>
       
-      <div className="flex items-center gap-6">
-        <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors hidden sm:block font-medium">Features</a>
-        <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors hidden sm:block font-medium">Benefits</a>
-      </div>
     </header>
   );
 };
