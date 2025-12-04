@@ -64,8 +64,14 @@ io.on('connection', (socket) => {
         '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         '--referer', 'https://www.youtube.com/',
         '--no-check-certificate',
-        '--extractor-args', 'youtube:player_client=android,web',
-        '--extractor-args', 'youtube:skip=dash',
+        // Use multiple player clients to bypass restrictions
+        '--extractor-args', 'youtube:player_client=android,ios,web,mweb',
+        '--extractor-args', 'youtube:skip=dash,hls',
+        // Bypass age restrictions
+        '--age-limit', '0',
+        // Add cookies support (helps with sign-in required videos)
+        '--mark-watched',
+        '--no-warnings',
         '--throttled-rate', '100K'
       ];
 
