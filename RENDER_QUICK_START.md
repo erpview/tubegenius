@@ -21,10 +21,8 @@
 | **Name** | `tubegenius-backend` |
 | **Region** | `Oregon (US West)` |
 | **Branch** | `main` |
-| **Runtime** | `Node` |
 | **Build Command** | `./render-build.sh` |
 | **Start Command** | `cd server && node server.js` |
-| **Plan** | `Free` |
 
 **Environment Variables** (click "Add Environment Variable"):
 - `NODE_ENV` = `production`
