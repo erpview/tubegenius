@@ -19,12 +19,6 @@ export const Header: React.FC = () => {
       <div className="flex items-center gap-6">
         <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors hidden sm:block font-medium">Features</a>
         <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors hidden sm:block font-medium">Benefits</a>
-        <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors hidden sm:block font-medium">Pricing</a>
-        <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors hidden md:block font-medium">Our Value</a>
-        <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors hidden md:block font-medium">Docs →</a>
-        <button className="bg-white hover:bg-slate-100 text-slate-900 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:scale-105 shadow-lg">
-          Start for free
-        </button>
       </div>
     </header>
   );
