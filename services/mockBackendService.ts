@@ -31,7 +31,9 @@ export class BackendProcessor {
       }
 
       // Connect to real backend
-      const BACKEND_URL = 'https://tubegenius-production.up.railway.app';
+      // TESTING: Temporarily using Render to test if it works
+      const BACKEND_URL = 'https://tubegenius-backend.onrender.com';
+      // Railway URL: 'https://tubegenius-production.up.railway.app'
       this.socket = io(BACKEND_URL, {
         transports: ['websocket', 'polling'],
         reconnection: false
